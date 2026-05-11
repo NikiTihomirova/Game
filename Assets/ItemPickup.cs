@@ -1,18 +1,26 @@
 using UnityEngine;
+using StarterAssets;
 
 public class ItemPickup : MonoBehaviour
 {
-    public SeasonType seasonToUnlock; // кой сезон отключва този предмет
+    public SeasonType seasonToUnlock;
+
+    public ThirdPersonController player;
+    public GameObject restartPanel;
 
     private void OnTriggerEnter(Collider other)
     {
-        // Проверява дали това е играчът
         if (other.CompareTag("Player"))
         {
-            // Извиква SeasonManager, за да отключи следващия сезон
             SeasonManager.Instance.UnlockSeasonNext(seasonToUnlock);
 
-            // Изтрива предмета от сцената
+            if (gameObject.name == "water")
+            {
+                restartPanel.SetActive(true);
+                player.canMove = false;
+                Time.timeScale = 0f;
+            }
+
             Destroy(gameObject);
         }
     }

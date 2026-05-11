@@ -1,22 +1,23 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.Rendering.PostProcessing;
+using UnityEngine.Rendering;
 
 public class SeasonEffectManager : MonoBehaviour
 {
-    public PostProcessVolume globalVolume;
-    public float transitionDuration = 2f;
+    public Volume globalVolume;
 
-    public PostProcessProfile spring;
-    public PostProcessProfile summer;
-    public PostProcessProfile autumn;
-    public PostProcessProfile winter;
+    public VolumeProfile spring;
+    public VolumeProfile summer;
+    public VolumeProfile autumn;
+    public VolumeProfile winter;
+
+    public float transitionDuration = 2f;
 
     private Coroutine activeTransition;
 
     public void TransitionTo(string season)
     {
-        PostProcessProfile target = season.ToLower() switch
+        VolumeProfile target = season.ToLower() switch
         {
             "spring" => spring,
             "summer" => summer,
@@ -25,9 +26,9 @@ public class SeasonEffectManager : MonoBehaviour
             _ => null
         };
 
-        if (target == null)
+        if (target == null || globalVolume == null)
         {
-            Debug.LogWarning($"SeasonManager: No profile found for '{season}'");
+            Debug.LogError("Missing reference!");
             return;
         }
 
@@ -37,24 +38,23 @@ public class SeasonEffectManager : MonoBehaviour
         activeTransition = StartCoroutine(Blend(target));
     }
 
-    private IEnumerator Blend(PostProcessProfile target)
+    private IEnumerator Blend(VolumeProfile target)
     {
-        GameObject tempObj = new GameObject("_SeasonBlend");
-        PostProcessVolume tempVol = tempObj.AddComponent<PostProcessVolume>();
-        tempVol.isGlobal = true;
-        tempVol.priority = globalVolume.priority + 1;
-        tempVol.profile = target;
-        tempVol.weight = 0f;
+        VolumeProfile startProfile = globalVolume.profile;
+        VolumeProfile temp = ScriptableObject.Instantiate(target);
+
+        globalVolume.profile = temp;
 
         float t = 0f;
+
         while (t < transitionDuration)
         {
             t += Time.deltaTime;
-            tempVol.weight = Mathf.Clamp01(t / transitionDuration);
+            globalVolume.weight = Mathf.Clamp01(t / transitionDuration);
             yield return null;
         }
 
         globalVolume.profile = target;
-        Destroy(tempObj);
+        globalVolume.weight = 1f;
     }
 }
